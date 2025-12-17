@@ -1,0 +1,14 @@
+{
+  "Bus 1": [
+    { "name": "Gandhipuram", "lat": 11.0176, "lng": 76.9674 },
+    { "name": "Tatabad", "lat": 11.0235, "lng": 76.9567 },
+    { "name": "Peelamedu", "lat": 11.0290, "lng": 77.0030 },
+    { "name": "SRK College", "lat": 11.0807, "lng": 77.0064 }
+  ],
+  "Bus 2": [
+    { "name": "Ukkadam", "lat": 10.9909, "lng": 76.9554 },
+    { "name": "Town Hall", "lat": 10.9986, "lng": 76.9601 },
+    { "name": "Peelamedu", "lat": 11.0290, "lng": 77.0030 },
+    { "name": "SRK College", "lat": 11.0807, "lng": 77.0064 }
+  ]
+}

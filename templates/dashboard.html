@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>College Bus Tracker</title>
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+
+    header {
+      background: #0b5ed7;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+    }
+
+    #map {
+      height: 520px;
+      border-radius: 8px;
+      background: #ddd;
+    }
+
+    .panel {
+      background: white;
+      padding: 14px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+    }
+
+    .panel h3 {
+      margin-top: 0;
+    }
+
+    select {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0 12px;
+    }
+
+    ul {
+      padding-left: 18px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e9f2ff;
+      color: #0b5ed7;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>🚌 College Bus Tracking System</h2>
+  <div id="routeTitle">Route: <strong>Bus 1</strong></div>
+</header>
+
+<div class="container">
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- INFO PANEL -->
+  <div class="panel">
+    <h3>Select Bus</h3>
+    <select id="busSelect"></select>
+
+    <h3>⏱ ETA for Stops</h3>
+    <ul id="etaList"></ul>
+
+    <div class="meta">
+      Last updated:
+      <span id="lastUpdated" class="badge">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+let map = L.map("map").setView([11.02, 76.96], 12);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+  .addTo(map);
+
+let marker;
+let routeLine;
+let currentBus = "Bus 1";
+
+/* ---------- Helpers ---------- */
+function updateTime() {
+  const now = new Date();
+  document.getElementById("lastUpdated").innerText =
+    now.toLocaleTimeString();
+}
+
+function setRouteTitle() {
+  document.getElementById("routeTitle").innerHTML =
+    `Route: <strong>${currentBus}</strong>`;
+}
+
+/* ---------- Load Buses ---------- */
+function loadBuses() {
+  fetch("/api/buses")
+    .then(res => res.json())
+    .then(data => {
+      let select = document.getElementById("busSelect");
+      select.innerHTML = "";
+
+      data.forEach(bus => {
+        let option = document.createElement("option");
+        option.value = bus.id;
+        option.text = bus.id;
+        select.appendChild(option);
+
+        if (bus.id === currentBus) {
+          if (marker) map.removeLayer(marker);
+          marker = L.marker([bus.lat, bus.lng])
+            .addTo(map)
+            .bindPopup(bus.id);
+        }
+      });
+      updateTime();
+    });
+}
+
+/* ---------- Load Route Line ---------- */
+function loadRoute() {
+  fetch("/api/route/" + currentBus)
+    .then(res => res.json())
+    .then(data => {
+      if (routeLine) map.removeLayer(routeLine);
+
+      let latlngs = data.map(p => [p.lat, p.lng]);
+      routeLine = L.polyline(latlngs, {
+        color: "#0b5ed7",
+        weight: 4
+      }).addTo(map);
+
+      map.fitBounds(routeLine.getBounds());
+      setRouteTitle();
+    });
+}
+
+/* ---------- Load ETA ---------- */
+function loadETA() {
+  fetch("/api/eta/" + currentBus)
+    .then(res => res.json())
+    .then(data => {
+      let list = document.getElementById("etaList");
+      list.innerHTML = "";
+      data.forEach(e => {
+        list.innerHTML += `<li>${e.stop} → ${e.eta} mins</li>`;
+      });
+    });
+}
+
+/* ---------- Bus Change ---------- */
+document.getElementById("busSelect").addEventListener("change", e => {
+  currentBus = e.target.value;
+  loadRoute();
+  loadETA();
+});
+
+/* ---------- Initial Load ---------- */
+loadBuses();
+loadRoute();
+loadETA();
+
+setInterval(() => {
+  loadBuses();
+  loadETA();
+}, 5000);
+</script>
+
+</body>
+</html>
